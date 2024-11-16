@@ -4,7 +4,9 @@
     <header v-if="!isSignInPage">
       <nav>
         <router-link to="/">Home</router-link>
-        <router-link to="/about">About</router-link>
+        <button class="icon-button" @click="goToSignIn">
+          <i class="icon-user"></i>
+        </button>
       </nav>
     </header>
     <!-- 라우터 뷰 -->
@@ -21,13 +23,19 @@ export default {
       return this.$route.path === "/signin";
     },
   },
+  methods: {
+    goToSignIn() {
+      this.$router.push("/signin"); // SignIn 페이지로 이동
+    },
+  },
 };
 </script>
 
 <style>
 nav {
   display: flex;
-  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
   padding: 10px;
   background-color: #f4f4f4;
 }
@@ -39,5 +47,18 @@ nav a {
 
 nav a.router-link-active {
   font-weight: bold;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.icon-user {
+  content: url("https://cdn-icons-png.flaticon.com/512/847/847969.png");
+  width: 32px;
+  height: 32px;
 }
 </style>

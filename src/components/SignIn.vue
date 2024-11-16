@@ -118,10 +118,12 @@
 
 <script>
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
 
 export default {
   name: "SignIn",
   setup() {
+    const router = useRouter(); // Router 객체 사용
     const isLoginVisible = ref(true);
     const email = ref("");
     const password = ref("");
@@ -171,7 +173,12 @@ export default {
     };
 
     const handleLogin = () => {
-      alert("Login successful!");
+      if (email.value && password.value) {
+        alert("Login successful!");
+        router.push("/"); // 홈 경로로 이동
+      } else {
+        alert("Please enter email and password.");
+      }
     };
 
     const handleRegister = () => {
