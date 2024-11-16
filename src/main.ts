@@ -9,7 +9,5 @@ app.use(router);
 app.use(Toast, {
   position: 'top-right',
   timeout: 3000,
-  closeOnClick: true,
-  pauseOnHover: true,
 });
 app.mount('#app');
