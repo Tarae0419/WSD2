@@ -1,11 +1,11 @@
 {
-  "homepage": "htttps://tarae0419.github.io/WSD2",
+  "homepage": "https://tarae0419.github.io/WSD2",
   "name": "assign2",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
+    "deploy": "gh-pages -d dist",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
