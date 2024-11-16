@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import SignIn from '../components/SignIn.vue';
-import HomePage from '../components/Home.vue';
+import Home from '@/components/Home.vue';
 import Popular from '@/components/Popular.vue';
 import Search from '@/components/Search.vue';
 import Wishlist from '@/components/Wishlist.vue';
@@ -8,8 +8,8 @@ import Wishlist from '@/components/Wishlist.vue';
 const routes = [
   {
     path: '/',
-    name: 'HomePage', // 이름 수정
-    component: HomePage,
+    name: 'Home', // 이름 수정
+    component: Home,
   },
   {
     path: '/signin',
