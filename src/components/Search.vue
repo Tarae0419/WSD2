@@ -1,11 +1,11 @@
 <template>
   <div class="search-page">
-    <h1>Search Movies</h1>
+    <h1>영화 찾기</h1>
 
     <!-- Filter Section -->
     <div class="filters">
-      <div>
-        <label for="genre">Genre:</label>
+      <div class="filter-group">
+        <label for="genre">장르</label>
         <select v-model="selectedGenre" id="genre">
           <option value="">All</option>
           <option v-for="genre in genres" :key="genre.id" :value="genre.id">
@@ -14,8 +14,8 @@
         </select>
       </div>
 
-      <div>
-        <label for="rating">Rating:</label>
+      <div class="filter-group">
+        <label for="rating">평점</label>
         <select v-model="selectedRating" id="rating">
           <option value="">All</option>
           <option v-for="rating in ratingOptions" :key="rating" :value="rating">
@@ -24,8 +24,8 @@
         </select>
       </div>
 
-      <div>
-        <label for="sort">Sort by:</label>
+      <div class="filter-group">
+        <label for="sort">정렬</label>
         <select v-model="selectedSort" id="sort">
           <option value="popularity.desc">Popularity (High to Low)</option>
           <option value="popularity.asc">Popularity (Low to High)</option>
@@ -36,7 +36,7 @@
         </select>
       </div>
 
-      <button @click="resetFilters">Reset Filters</button>
+      <button class="reset-btn" @click="resetFilters">초기화</button>
     </div>
 
     <!-- Movie Table -->
@@ -44,11 +44,11 @@
       <table>
         <thead>
           <tr>
-            <th>Poster</th>
-            <th>Title</th>
-            <th>Genre</th>
-            <th>Rating</th>
-            <th>Release Date</th>
+            <th>포스터</th>
+            <th>제목</th>
+            <th>장르</th>
+            <th>평점</th>
+            <th>개봉일</th>
           </tr>
         </thead>
         <tbody>
@@ -79,52 +79,33 @@ export default {
   name: "SearchMovies",
   data() {
     return {
-      movies: [],
-      genres: [],
-      wishlist: [],
-
-      // Filters
+      movies: [], // 영화 데이터 저장
+      genres: [], // 장르 데이터 저장
+      recommendedMovies: [], // 추천된 영화 (Local Storage)
       selectedGenre: "",
       selectedRating: "",
       selectedSort: "popularity.desc",
-
-      // Rating options
-      ratingOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      ratingOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // 평점 필터링 옵션
     };
   },
   computed: {
     filteredMovies() {
       let filtered = [...this.movies];
-
-      // Genre filter
       if (this.selectedGenre) {
         filtered = filtered.filter((movie) =>
           movie.genre_ids.includes(parseInt(this.selectedGenre))
         );
       }
-
-      // Rating filter
       if (this.selectedRating) {
         filtered = filtered.filter(
           (movie) => movie.vote_average >= this.selectedRating
         );
       }
-
-      // Sort by selected criteria
       filtered.sort((a, b) => {
-        if (this.selectedSort.includes(".desc")) {
-          return (
-            b[this.selectedSort.split(".")[0]] -
-            a[this.selectedSort.split(".")[0]]
-          );
-        } else {
-          return (
-            a[this.selectedSort.split(".")[0]] -
-            b[this.selectedSort.split(".")[0]]
-          );
-        }
+        const key = this.selectedSort.split(".")[0];
+        const direction = this.selectedSort.includes(".desc") ? -1 : 1;
+        return (a[key] - b[key]) * direction;
       });
-
       return filtered;
     },
   },
@@ -133,10 +114,7 @@ export default {
       const response = await axios.get(
         "https://api.themoviedb.org/3/discover/movie",
         {
-          params: {
-            api_key: "338afe18473748636f29d4cb0fedaa87",
-            sort_by: this.selectedSort,
-          },
+          params: { api_key: "338afe18473748636f29d4cb0fedaa87" },
         }
       );
       this.movies = response.data.results;
@@ -145,9 +123,7 @@ export default {
       const response = await axios.get(
         "https://api.themoviedb.org/3/genre/movie/list",
         {
-          params: {
-            api_key: "338afe18473748636f29d4cb0fedaa87",
-          },
+          params: { api_key: "338afe18473748636f29d4cb0fedaa87" },
         }
       );
       this.genres = response.data.genres;
@@ -163,24 +139,29 @@ export default {
         )
         .join(", ");
     },
-    toggleWishlist(movie) {
-      const exists = this.wishlist.some((item) => item.id === movie.id);
-      if (exists) {
-        this.wishlist = this.wishlist.filter((item) => item.id !== movie.id);
-      } else {
-        this.wishlist.push(movie);
-      }
-      this.saveWishlist();
-    },
     isInWishlist(movie) {
-      return this.wishlist.some((item) => item.id === movie.id);
+      return this.recommendedMovies.some((item) => item.id === movie.id);
     },
-    loadWishlist() {
-      const saved = localStorage.getItem("wishlist");
-      this.wishlist = saved ? JSON.parse(saved) : [];
+    toggleWishlist(movie) {
+      const exists = this.isInWishlist(movie);
+      if (exists) {
+        this.recommendedMovies = this.recommendedMovies.filter(
+          (item) => item.id !== movie.id
+        );
+      } else {
+        this.recommendedMovies.push(movie);
+      }
+      this.saveToLocalStorage();
     },
-    saveWishlist() {
-      localStorage.setItem("wishlist", JSON.stringify(this.wishlist));
+    loadFromLocalStorage() {
+      const saved = localStorage.getItem("recommendedMovies");
+      this.recommendedMovies = saved ? JSON.parse(saved) : [];
+    },
+    saveToLocalStorage() {
+      localStorage.setItem(
+        "recommendedMovies",
+        JSON.stringify(this.recommendedMovies)
+      );
     },
     resetFilters() {
       this.selectedGenre = "";
@@ -190,66 +171,160 @@ export default {
   },
   async created() {
     await Promise.all([this.fetchMovies(), this.fetchGenres()]);
-    this.loadWishlist();
+    this.loadFromLocalStorage();
   },
 };
 </script>
 
 <style scoped>
+/* 전체 페이지 스타일 */
 .search-page {
   padding: 20px;
+  background: linear-gradient(
+    to bottom,
+    #e3f2fd,
+    #ffffff
+  ); /* 부드러운 그라디언트 배경 */
+  min-height: 100vh;
+  text-align: center;
 }
 
 h1 {
   text-align: center;
   margin-bottom: 20px;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #1565c0; /* 진한 블루 */
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* 필터 섹션 스타일 */
 .filters {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
-  gap: 10px;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
 }
 
-.filters label {
-  margin-right: 5px;
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.filters select,
-.filters button {
-  padding: 5px 10px;
+.filter-group label {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.filter-group select {
+  padding: 10px 15px;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  transition: border-color 0.3s ease;
+}
+
+.filter-group select:focus {
+  border-color: #1565c0;
+  outline: none;
+}
+
+.reset-btn {
+  padding: 12px 25px;
+  background: linear-gradient(to right, #4facfe, #00f2fe); /* 버튼 그라디언트 */
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.reset-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* 영화 테이블 스타일 */
+.movie-table {
+  margin-top: 20px;
 }
 
 .movie-table table {
   width: 100%;
   border-collapse: collapse;
+  background: white;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .movie-table th,
 .movie-table td {
-  border: 1px solid #ccc;
-  padding: 10px;
+  padding: 15px;
   text-align: center;
+  font-size: 1rem;
+  border-bottom: 1px solid #ccc;
 }
 
 .movie-table th {
-  background-color: #f4f4f4;
+  background: #1565c0;
+  color: white;
+  font-weight: bold;
+}
+
+.movie-table td {
+  background: #f9f9f9;
+  font-size: 0.95rem;
 }
 
 .movie-table td img {
   width: 100px;
   border-radius: 8px;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .movie-table td img:hover {
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .added {
   background-color: #e6f7ff; /* 추천된 영화 강조 */
-  border: 2px solid #007bff;
+  border: 2px solid #007bff; /* 테두리 강조 */
+  font-weight: bold;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+    padding: 15px;
+  }
+
+  .filter-group select {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+
+  .movie-table td img {
+    width: 80px; /* 작은 화면에서 이미지 크기 축소 */
+  }
+
+  h1 {
+    font-size: 2rem; /* 제목 크기 축소 */
+  }
 }
 </style>
