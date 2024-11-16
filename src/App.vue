@@ -50,14 +50,16 @@ nav {
 }
 
 .nav-links {
+  flex-grow: 1; /* 중앙 정렬을 위해 공간 확보 */
   display: flex;
+  justify-content: center; /* 링크를 가운데 정렬 */
   gap: 20px;
 }
 
 .nav-link {
   color: white;
   text-decoration: none;
-  font-size: 16px;
+  font-size: 20px;
   transition: color 0.2s ease;
 }
 
