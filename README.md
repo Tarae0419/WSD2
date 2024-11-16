@@ -1,34 +1,35 @@
-# assign2
+# Vue를 이용하여 영화 사이트 제작하기
 
-## Project setup
-```
-npm install
-```
+## 기본 정보
+- 이 프로젝트는 vue를 이용하고 TMDB의 API를 통해 영화 사이트를 제작하는 것입니다.
+- 주소 : https://tarae0419.github.io/WSD2/
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+## 사용 기술
 
-### Compiles and minifies for production
-```
-npm run build
-```
+### 프론트엔드 기술 스택
 
-### Run your unit tests
-```
-npm run test:unit
-```
+1. 프레임워크/라이브러리
+    - **vue.js**
+    - **Vue Router**
+    - **Vue Toastification**
+2. 스타일 및 UI
+    - **CSS**
+    - **Swiper.js**
+3. 정적 파일 빌드 및 배포
+    - **Vue CLI**
+    - **GitHub Pages**
 
-### Run your end-to-end tests
-```
-npm run test:e2e
-```
+### 툴링 및 자동화
 
-### Lints and fixes files
-```
-npm run lint
-```
+1. 코드 품질
+    - **Prettier**
+2. 패키지 매니저
+    - **npm**
+3. 버전 관리
+    - **Git**
+4. 자동 배포
+    - **gh-pages 패키지**
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+## 프로젝트 구조
+
+
