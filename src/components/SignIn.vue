@@ -35,9 +35,6 @@
                 <input type="checkbox" id="remember" v-model="rememberMe" />
                 <label for="remember" class="read-text">Remember me</label>
               </span>
-              <span class="checkbox forgot">
-                <a href="#">Forgot Password?</a>
-              </span>
               <button :disabled="!isLoginFormValid">Login</button>
             </form>
             <a
@@ -123,7 +120,8 @@ import { useRouter } from "vue-router";
 export default {
   name: "SignIn",
   setup() {
-    const router = useRouter(); // Router 객체 사용
+    const router = useRouter();
+    const API_KEY = "338afe18473748636f29d4cb0fedaa87"; // TMDB API 키
     const isLoginVisible = ref(true);
     const email = ref("");
     const password = ref("");
@@ -173,21 +171,33 @@ export default {
     };
 
     const handleLogin = () => {
-      if (email.value && password.value) {
+      const savedPassword = localStorage.getItem(email.value);
+      if (savedPassword && savedPassword === password.value) {
         alert("Login successful!");
-        router.push("/"); // 홈 경로로 이동
+        localStorage.setItem("isLoggedIn", "true");
+        router.push("/");
       } else {
-        alert("Please enter email and password.");
+        alert("Invalid email or password.");
       }
     };
 
-    const handleRegister = () => {
+    const handleRegister = async () => {
       if (registerPassword.value !== confirmPassword.value) {
         alert("Passwords do not match!");
         return;
       }
-      alert("Registration successful!");
-      toggleCard();
+      // TMDB API 호출 (예: 비밀번호 저장을 위한 요청)
+      const response = await fetch(
+        `https://api.themoviedb.org/3/authentication/token/new?api_key=${API_KEY}`
+      );
+      const data = await response.json();
+      if (data.success) {
+        localStorage.setItem(registerEmail.value, registerPassword.value);
+        alert("Registration successful!");
+        toggleCard();
+      } else {
+        alert("Registration failed.");
+      }
     };
 
     return {

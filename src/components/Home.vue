@@ -1,60 +1,42 @@
 <template>
   <div class="home">
-    <h1>Movie Lists</h1>
+    <h1>Welcome to Movie Hub</h1>
 
-    <!-- Trending Movies -->
-    <section>
-      <h2>Trending Movies</h2>
-      <div class="movie-list">
-        <div class="movie-card" v-for="movie in trendingMovies" :key="movie.id">
-          <img
-            :src="`https://image.tmdb.org/t/p/w500/${movie.poster_path}`"
-            :alt="movie.title"
-          />
-          <h3>{{ movie.title }}</h3>
-        </div>
-      </div>
-    </section>
+    <!-- Loading -->
+    <div v-if="loading" class="loading">Loading movies...</div>
 
-    <!-- Top Rated Movies -->
-    <section>
-      <h2>Top Rated Movies</h2>
-      <div class="movie-list">
-        <div class="movie-card" v-for="movie in topRatedMovies" :key="movie.id">
-          <img
-            :src="`https://image.tmdb.org/t/p/w500/${movie.poster_path}`"
-            :alt="movie.title"
-          />
-          <h3>{{ movie.title }}</h3>
-        </div>
-      </div>
-    </section>
-
-    <!-- Upcoming Movies -->
-    <section>
-      <h2>Upcoming Movies</h2>
-      <div class="movie-list">
-        <div class="movie-card" v-for="movie in upcomingMovies" :key="movie.id">
-          <img
-            :src="`https://image.tmdb.org/t/p/w500/${movie.poster_path}`"
-            :alt="movie.title"
-          />
-          <h3>{{ movie.title }}</h3>
-        </div>
-      </div>
-    </section>
-
-    <!-- Popular Movies -->
-    <section>
-      <h2>Popular Movies</h2>
-      <div class="movie-list">
-        <div class="movie-card" v-for="movie in popularMovies" :key="movie.id">
-          <img
-            :src="`https://image.tmdb.org/t/p/w500/${movie.poster_path}`"
-            :alt="movie.title"
-          />
-          <h3>{{ movie.title }}</h3>
-        </div>
+    <!-- Sections -->
+    <section v-else>
+      <div
+        class="movie-section"
+        v-for="section in movieSections"
+        :key="section.title"
+      >
+        <h2>{{ section.title }}</h2>
+        <swiper
+          :slides-per-view="5"
+          space-between="20"
+          navigation
+          pagination
+          class="movie-slider"
+        >
+          <swiper-slide
+            v-for="movie in section.movies"
+            :key="movie.id"
+            :class="getCardClass(movie)"
+            @click="toggleRecommendation(movie)"
+          >
+            <img
+              :src="getPosterUrl(movie.poster_path)"
+              :alt="movie.title"
+              class="movie-poster"
+            />
+            <h3>{{ movie.title }}</h3>
+            <p>{{ truncateDescription(movie.overview) }}</p>
+            <p>⭐ Rating: {{ movie.vote_average }}</p>
+            <p>📅 Release: {{ movie.release_date }}</p>
+          </swiper-slide>
+        </swiper>
       </div>
     </section>
   </div>
@@ -62,70 +44,100 @@
 
 <script>
 import axios from "axios";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import { Swiper, SwiperSlide } from "swiper/vue";
 
 export default {
   name: "HomePage",
+  components: {
+    Swiper,
+    SwiperSlide,
+  },
   data() {
     return {
-      trendingMovies: [],
-      topRatedMovies: [],
-      upcomingMovies: [],
-      popularMovies: [],
+      movieSections: [
+        { title: "Trending Movies", movies: [] },
+        { title: "Top Rated Movies", movies: [] },
+        { title: "Upcoming Movies", movies: [] },
+        { title: "Popular Movies", movies: [] },
+      ],
+      recommendedMovies: [], // 로컬 스토리지에서 불러온 추천 영화
+      loading: true,
     };
   },
   methods: {
-    async fetchTrendingMovies() {
-      const response = await axios.get(
-        "https://api.themoviedb.org/3/trending/movie/day",
-        {
-          params: {
-            api_key: "338afe18473748636f29d4cb0fedaa87",
-          },
-        }
-      );
-      this.trendingMovies = response.data.results;
+    async fetchMovies(url, sectionIndex) {
+      try {
+        const response = await axios.get(url, {
+          params: { api_key: "338afe18473748636f29d4cb0fedaa87" },
+        });
+        this.movieSections[sectionIndex].movies = response.data.results;
+      } catch (error) {
+        console.error(
+          `Failed to fetch movies for ${this.movieSections[sectionIndex].title}`,
+          error
+        );
+      }
     },
-    async fetchTopRatedMovies() {
-      const response = await axios.get(
-        "https://api.themoviedb.org/3/movie/top_rated",
-        {
-          params: {
-            api_key: "338afe18473748636f29d4cb0fedaa87",
-          },
-        }
-      );
-      this.topRatedMovies = response.data.results;
+    getPosterUrl(path) {
+      return `https://image.tmdb.org/t/p/w500${path}`;
     },
-    async fetchUpcomingMovies() {
-      const response = await axios.get(
-        "https://api.themoviedb.org/3/movie/upcoming",
-        {
-          params: {
-            api_key: "338afe18473748636f29d4cb0fedaa87",
-          },
-        }
-      );
-      this.upcomingMovies = response.data.results;
+    truncateDescription(description) {
+      return description.length > 100
+        ? description.substring(0, 100) + "..."
+        : description;
     },
-    async fetchPopularMovies() {
-      const response = await axios.get(
-        "https://api.themoviedb.org/3/movie/popular",
-        {
-          params: {
-            api_key: "338afe18473748636f29d4cb0fedaa87",
-          },
-        }
+    toggleRecommendation(movie) {
+      const exists = this.recommendedMovies.some(
+        (recommended) => recommended.id === movie.id
       );
-      this.popularMovies = response.data.results;
+
+      if (exists) {
+        this.recommendedMovies = this.recommendedMovies.filter(
+          (recommended) => recommended.id !== movie.id
+        );
+        alert(`${movie.title} has been removed from your Wishlist.`);
+      } else {
+        this.recommendedMovies.push(movie);
+        alert(`${movie.title} has been added to your Wishlist.`);
+      }
+
+      this.saveToLocalStorage();
+    },
+    loadFromLocalStorage() {
+      const saved = localStorage.getItem("recommendedMovies");
+      this.recommendedMovies = saved ? JSON.parse(saved) : [];
+    },
+    saveToLocalStorage() {
+      localStorage.setItem(
+        "recommendedMovies",
+        JSON.stringify(this.recommendedMovies)
+      );
+    },
+    getCardClass(movie) {
+      const isRecommended = this.recommendedMovies.some(
+        (recommended) => recommended.id === movie.id
+      );
+      return isRecommended ? "movie-card recommended-card" : "movie-card";
     },
   },
   async created() {
-    await Promise.all([
-      this.fetchTrendingMovies(),
-      this.fetchTopRatedMovies(),
-      this.fetchUpcomingMovies(),
-      this.fetchPopularMovies(),
-    ]);
+    const urls = [
+      "https://api.themoviedb.org/3/trending/movie/day",
+      "https://api.themoviedb.org/3/movie/top_rated",
+      "https://api.themoviedb.org/3/movie/upcoming",
+      "https://api.themoviedb.org/3/movie/popular",
+    ];
+
+    const fetchPromises = urls.map((url, index) =>
+      this.fetchMovies(url, index)
+    );
+    await Promise.all(fetchPromises);
+
+    this.loadFromLocalStorage();
+    this.loading = false;
   },
 };
 </script>
@@ -140,23 +152,53 @@ h1 {
   margin-bottom: 20px;
 }
 
-h2 {
-  margin: 20px 0;
+.loading {
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #555;
 }
 
-.movie-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.movie-section {
+  margin-bottom: 40px;
+}
+
+.movie-slider {
+  margin-bottom: 20px;
 }
 
 .movie-card {
-  width: 150px;
-  text-align: center;
+  width: 200px;
+  background-color: #f4f4f4;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s;
+  cursor: pointer;
 }
 
-.movie-card img {
+.recommended-card {
+  background-color: #e6f7ff;
+  border: 2px solid #007bff;
+}
+
+.movie-card:hover {
+  transform: scale(1.05);
+}
+
+.movie-poster {
   width: 100%;
-  border-radius: 8px;
+  height: 300px;
+  object-fit: cover;
+}
+
+.movie-card h3 {
+  font-size: 16px;
+  margin: 10px 0;
+}
+
+.movie-card p {
+  font-size: 14px;
+  color: #555;
 }
 </style>
