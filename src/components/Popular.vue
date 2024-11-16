@@ -13,9 +13,19 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="movie in currentPageMovies" :key="movie.id">
+          <tr
+            v-for="movie in currentPageMovies"
+            :key="movie.id"
+            @click="toggleWishlist(movie)"
+            :class="{ added: isInWishlist(movie) }"
+          >
             <td>
-              <img :src="getPosterUrl(movie.poster_path)" :alt="movie.title" />
+              <div class="poster-container">
+                <img
+                  :src="getPosterUrl(movie.poster_path)"
+                  :alt="movie.title"
+                />
+              </div>
             </td>
             <td>{{ movie.title }}</td>
             <td>{{ movie.release_date }}</td>
@@ -48,6 +58,7 @@ export default {
       currentPage: 1, // 현재 페이지
       totalPages: 0, // 총 페이지 수
       moviesPerPage: 10, // 페이지 당 영화 수
+      wishlist: [], // 위시리스트 (Local Storage)
     };
   },
   computed: {
@@ -88,9 +99,46 @@ export default {
     getPosterUrl(path) {
       return `https://image.tmdb.org/t/p/w500${path}`;
     },
+    // 영화가 위시리스트에 있는지 확인
+    isInWishlist(movie) {
+      return this.wishlist.some((item) => item.id === movie.id);
+    },
+    // 위시리스트에 추가/제거
+    toggleWishlist(movie) {
+      const exists = this.isInWishlist(movie);
+      if (exists) {
+        // 이미 존재하면 제거
+        this.wishlist = this.wishlist.filter((item) => item.id !== movie.id);
+      } else {
+        // 존재하지 않으면 추가
+        this.wishlist.push(movie);
+      }
+      this.saveWishlist();
+    },
+    // Local Storage에서 위시리스트 로드
+    loadWishlist() {
+      const saved = localStorage.getItem("wishlist");
+      if (saved) {
+        try {
+          this.wishlist = JSON.parse(saved);
+        } catch (e) {
+          console.error("Error parsing wishlist from Local Storage", e);
+          this.wishlist = [];
+        }
+      }
+    },
+    // Local Storage에 위시리스트 저장
+    saveWishlist() {
+      try {
+        localStorage.setItem("wishlist", JSON.stringify(this.wishlist));
+      } catch (e) {
+        console.error("Error saving wishlist to Local Storage", e);
+      }
+    },
   },
   async created() {
     await this.fetchMovies();
+    this.loadWishlist();
   },
 };
 </script>
@@ -125,6 +173,23 @@ h1 {
 .table-view td img {
   width: 100px;
   border-radius: 8px;
+  transition: transform 0.3s ease;
+}
+
+.table-view td img:hover {
+  transform: scale(1.1);
+}
+
+.poster-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.added {
+  background-color: #e6f7ff; /* 추천된 영화 강조 */
+  border: 2px solid #007bff; /* 추천된 영화 테두리 */
+  font-weight: bold;
 }
 
 .pagination {
