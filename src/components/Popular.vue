@@ -69,14 +69,22 @@ export default {
     },
   },
   methods: {
-    async fetchMovies() {
-      const response = await axios.get(
-        "https://api.themoviedb.org/3/movie/popular",
-        {
-          params: { api_key: "338afe18473748636f29d4cb0fedaa87" },
-        }
-      );
-      this.movies = response.data.results;
+    async fetchMovies(pages = 5) {
+      const allMovies = [];
+      for (let page = 1; page <= pages; page++) {
+        const response = await axios.get(
+          "https://api.themoviedb.org/3/movie/popular",
+          {
+            params: { api_key: "338afe18473748636f29d4cb0fedaa87", page },
+          }
+        );
+        allMovies.push(...response.data.results);
+      }
+
+      // 중복 제거 후 영화 데이터 저장
+      this.movies = this.removeDuplicates(allMovies);
+
+      // 총 페이지 수 계산
       this.totalPages = Math.ceil(this.movies.length / this.moviesPerPage);
     },
     getPosterUrl(path) {
@@ -106,9 +114,32 @@ export default {
         JSON.stringify(this.recommendedMovies)
       );
     },
+    removeDuplicates(movies) {
+      const unique = [];
+      const seen = new Set();
+
+      movies.forEach((movie) => {
+        if (!seen.has(movie.id)) {
+          unique.push(movie);
+          seen.add(movie.id);
+        }
+      });
+
+      return unique;
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
   },
   async created() {
-    await this.fetchMovies();
+    await this.fetchMovies(5); // 5개의 페이지 데이터 가져오기
     this.loadFromLocalStorage();
   },
 };
