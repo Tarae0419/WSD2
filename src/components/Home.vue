@@ -68,18 +68,38 @@ export default {
     };
   },
   methods: {
-    async fetchMovies(url, sectionIndex) {
+    async fetchMovies(url, sectionIndex, pages = 3) {
       try {
-        const response = await axios.get(url, {
-          params: { api_key: "338afe18473748636f29d4cb0fedaa87" },
-        });
-        this.movieSections[sectionIndex].movies = response.data.results;
+        const allMovies = [];
+        for (let page = 1; page <= pages; page++) {
+          const response = await axios.get(url, {
+            params: { api_key: "338afe18473748636f29d4cb0fedaa87", page },
+          });
+          allMovies.push(...response.data.results);
+        }
+
+        // 중복 제거
+        const uniqueMovies = this.removeDuplicates(allMovies);
+        this.movieSections[sectionIndex].movies = uniqueMovies;
       } catch (error) {
         console.error(
           `Failed to fetch movies for ${this.movieSections[sectionIndex].title}`,
           error
         );
       }
+    },
+    removeDuplicates(movies) {
+      const unique = [];
+      const seen = new Set();
+
+      movies.forEach((movie) => {
+        if (!seen.has(movie.id)) {
+          unique.push(movie);
+          seen.add(movie.id);
+        }
+      });
+
+      return unique;
     },
     getPosterUrl(path) {
       return `https://image.tmdb.org/t/p/w500${path}`;
@@ -131,8 +151,8 @@ export default {
       "https://api.themoviedb.org/3/movie/popular",
     ];
 
-    const fetchPromises = urls.map((url, index) =>
-      this.fetchMovies(url, index)
+    const fetchPromises = urls.map(
+      (url, index) => this.fetchMovies(url, index, 3) // 페이지 수 설정
     );
     await Promise.all(fetchPromises);
 

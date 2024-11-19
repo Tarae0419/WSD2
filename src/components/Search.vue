@@ -110,14 +110,23 @@ export default {
     },
   },
   methods: {
-    async fetchMovies() {
-      const response = await axios.get(
-        "https://api.themoviedb.org/3/discover/movie",
-        {
-          params: { api_key: "338afe18473748636f29d4cb0fedaa87" },
-        }
-      );
-      this.movies = response.data.results;
+    async fetchMovies(pages = 5) {
+      const allMovies = [];
+      for (let page = 1; page <= pages; page++) {
+        const response = await axios.get(
+          "https://api.themoviedb.org/3/discover/movie",
+          {
+            params: {
+              api_key: "338afe18473748636f29d4cb0fedaa87",
+              page,
+              sort_by: this.selectedSort,
+            },
+          }
+        );
+        allMovies.push(...response.data.results);
+      }
+      // 중복 제거
+      this.movies = this.removeDuplicates(allMovies);
     },
     async fetchGenres() {
       const response = await axios.get(
@@ -167,10 +176,22 @@ export default {
       this.selectedGenre = "";
       this.selectedRating = "";
       this.selectedSort = "popularity.desc";
+      this.fetchMovies(); // 필터 초기화 후 다시 영화 가져오기
+    },
+    removeDuplicates(movies) {
+      const unique = [];
+      const seen = new Set();
+      movies.forEach((movie) => {
+        if (!seen.has(movie.id)) {
+          unique.push(movie);
+          seen.add(movie.id);
+        }
+      });
+      return unique;
     },
   },
   async created() {
-    await Promise.all([this.fetchMovies(), this.fetchGenres()]);
+    await Promise.all([this.fetchMovies(5), this.fetchGenres()]); // 5페이지 데이터 가져오기
     this.loadFromLocalStorage();
   },
 };
